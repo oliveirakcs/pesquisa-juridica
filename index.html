@@ -498,14 +498,14 @@
       <label>Qual área(s) do Direito você atua? <span class="required-star">*</span></label>
       <div class="hint">Marque todas que se aplicam.</div>
       <div class="options" id="areas">
-        <label class="option" onclick="toggleCheck(this)"><input type="checkbox" value="Trabalhista"><div class="option-mark square"></div><span class="option-text">Trabalhista</span></label>
-        <label class="option" onclick="toggleCheck(this)"><input type="checkbox" value="Previdenciário"><div class="option-mark square"></div><span class="option-text">Previdenciário</span></label>
-        <label class="option" onclick="toggleCheck(this)"><input type="checkbox" value="Cível"><div class="option-mark square"></div><span class="option-text">Cível</span></label>
-        <label class="option" onclick="toggleCheck(this)"><input type="checkbox" value="Criminal"><div class="option-mark square"></div><span class="option-text">Criminal</span></label>
-        <label class="option" onclick="toggleCheck(this)"><input type="checkbox" value="Empresarial / Contratos"><div class="option-mark square"></div><span class="option-text">Empresarial / Contratos</span></label>
-        <label class="option" onclick="toggleCheck(this)"><input type="checkbox" value="Tributário"><div class="option-mark square"></div><span class="option-text">Tributário</span></label>
-        <label class="option" onclick="toggleCheck(this)"><input type="checkbox" value="Família / Sucessões"><div class="option-mark square"></div><span class="option-text">Família / Sucessões</span></label>
-        <label class="option" onclick="toggleCheck(this)"><input type="checkbox" value="Outra área"><div class="option-mark square"></div><span class="option-text">Outra área</span></label>
+        <label class="option"><input type="checkbox" value="Trabalhista"><div class="option-mark square"></div><span class="option-text">Trabalhista</span></label>
+        <label class="option"><input type="checkbox" value="Previdenciário"><div class="option-mark square"></div><span class="option-text">Previdenciário</span></label>
+        <label class="option"><input type="checkbox" value="Cível"><div class="option-mark square"></div><span class="option-text">Cível</span></label>
+        <label class="option"><input type="checkbox" value="Criminal"><div class="option-mark square"></div><span class="option-text">Criminal</span></label>
+        <label class="option"><input type="checkbox" value="Empresarial / Contratos"><div class="option-mark square"></div><span class="option-text">Empresarial / Contratos</span></label>
+        <label class="option"><input type="checkbox" value="Tributário"><div class="option-mark square"></div><span class="option-text">Tributário</span></label>
+        <label class="option"><input type="checkbox" value="Família / Sucessões"><div class="option-mark square"></div><span class="option-text">Família / Sucessões</span></label>
+        <label class="option"><input type="checkbox" value="Outra área"><div class="option-mark square"></div><span class="option-text">Outra área</span></label>
       </div>
       <div class="field-error" id="err-areas">Selecione ao menos uma área.</div>
     </div>
@@ -715,7 +715,7 @@
   // ─────────────────────────────────────────────────────────
   // ⚠️  COLE AQUI A URL DO SEU APPS SCRIPT APÓS IMPLANTAR
   // ─────────────────────────────────────────────────────────
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbytZuKl7s4lGQxkyLp5CtCjswJUWAE7fNW__KfqdOqe5FdMXQ4V2buFWAmtAqIWfe06/exec";
+  const SCRIPT_URL = "COLE_AQUI_A_URL_DO_SEU_APPS_SCRIPT";
   // ─────────────────────────────────────────────────────────
 
   const TOTAL = 5;
@@ -860,11 +860,15 @@
     showErr('err-' + group, false);
   }
 
-  function toggleCheck(el) {
-    el.classList.toggle('selected');
-    const anySelected = document.querySelectorAll('#areas .option.selected').length > 0;
-    showErr('err-areas', !anySelected);
-  }
+  // Checkbox via event delegation — evita o double-trigger do onclick em <label>
+  document.getElementById('areas').addEventListener('change', function(e) {
+    if (e.target.type === 'checkbox') {
+      const label = e.target.closest('.option');
+      label.classList.toggle('selected', e.target.checked);
+      const anySelected = document.querySelectorAll('#areas .option.selected').length > 0;
+      showErr('err-areas', !anySelected);
+    }
+  });
 
   function selectScale(btn, group, val) {
     scaleValues[group] = val;
