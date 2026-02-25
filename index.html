@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pesquisa · IA para Advogados</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0F1923;
+    --paper: #F8F5EF;
+    --cream: #EDE9E0;
+    --gold: #B8973A;
+    --gold-light: #D4AF5A;
+    --muted: #7A7268;
+    --border: #D4CEBF;
+    --white: #FFFFFF;
+    --error: #8B2B2B;
+    --error-bg: #FFF0F0;
+    --error-border: #FFCCCC;
+    --green: #1E5E3A;
+    --green-bg: #EDF7F1;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 60px 24px 100px;
+  }
+
+  /* ── Header ── */
+  .header {
+    text-align: center;
+    margin-bottom: 48px;
+    padding-bottom: 48px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    padding: 6px 16px;
+    margin-bottom: 28px;
+  }
+
+  .header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(30px, 5vw, 46px);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--ink);
+    margin-bottom: 20px;
+  }
+
+  .header h1 em { font-style: italic; color: var(--gold); }
+
+  .header p {
+    font-size: 15px;
+    color: var(--muted);
+    line-height: 1.75;
+    max-width: 500px;
+    margin: 0 auto 24px;
+    font-weight: 300;
+  }
+
+  .time-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 28px;
+  }
+  .time-tag::before {
+    content: '';
+    display: inline-block;
+    width: 20px; height: 1px;
+    background: var(--border);
+  }
+
+  /* ── Privacy notice ── */
+  .privacy-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: var(--green-bg);
+    border: 1px solid #A8D5BA;
+    padding: 16px 20px;
+    margin-top: 8px;
+  }
+
+  .privacy-icon {
+    font-size: 20px;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .privacy-notice p {
+    font-size: 13px;
+    color: var(--green);
+    line-height: 1.65;
+    font-weight: 400;
+    margin: 0;
+  }
+
+  .privacy-notice strong {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 4px;
+    font-size: 13px;
+  }
+
+  /* ── Progress ── */
+  .progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    transition: width 0.4s ease;
+    z-index: 100;
+  }
+
+  .steps-nav {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 52px;
+  }
+
+  .step-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: all 0.3s;
+  }
+  .step-dot.active { background: var(--gold); transform: scale(1.4); }
+  .step-dot.done   { background: var(--ink); }
+
+  /* ── Sections ── */
+  .section { display: none; animation: fadeUp 0.45s ease forwards; }
+  .section.active { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 10px;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 8px;
+    line-height: 1.3;
+  }
+
+  .section-desc {
+    font-size: 15px;
+    color: var(--muted);
+    margin-bottom: 36px;
+    line-height: 1.65;
+    font-weight: 300;
+  }
+
+  /* ── Questions ── */
+  .question { margin-bottom: 28px; }
+
+  .question label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 8px;
+    line-height: 1.5;
+  }
+
+  .required-star { color: var(--gold); font-size: 16px; line-height: 1; }
+
+  .question .hint {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 300;
+    margin-bottom: 10px;
+    font-style: italic;
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  textarea,
+  select {
+    width: 100%;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 0;
+    padding: 14px 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    appearance: none;
+  }
+
+  input:focus, textarea:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(184,151,58,0.1); }
+  input.invalid { border-color: var(--error) !important; box-shadow: none !important; }
+
+  .field-error {
+    display: none;
+    font-size: 12px;
+    color: var(--error);
+    margin-top: 5px;
+    font-style: italic;
+  }
+  .field-error.show { display: block; }
+
+  textarea { resize: vertical; min-height: 110px; line-height: 1.6; }
+
+  /* ── Options ── */
+  .options { display: flex; flex-direction: column; gap: 10px; }
+
+  .option {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .option:hover { border-color: var(--gold); background: #FFFEF9; }
+  .option input { display: none; }
+  .option.selected { border-color: var(--gold); background: #FFFDF0; }
+
+  .option-mark {
+    width: 20px; height: 20px; min-width: 20px;
+    border: 1.5px solid var(--border);
+    border-radius: 50%;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .option.selected .option-mark { border-color: var(--gold); background: var(--gold); }
+  .option.selected .option-mark::after { content:''; width:8px; height:8px; border-radius:50%; background:white; }
+
+  .option-mark.square { border-radius: 2px; }
+  .option.selected .option-mark.square::after {
+    content: '✓'; font-size: 12px; color: white; font-weight: 700;
+    border-radius: 0; width: auto; height: auto; background: transparent;
+  }
+
+  .option-text { font-size: 14px; color: var(--ink); line-height: 1.5; }
+
+  /* ── Scale ── */
+  .scale-wrap { display: flex; gap: 8px; }
+
+  .scale-btn {
+    flex: 1;
+    padding: 16px 8px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    color: var(--muted);
+  }
+  .scale-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .scale-btn.selected { border-color: var(--gold); background: var(--gold); color: white; }
+
+  .scale-desc {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .q-divider { width: 40px; height: 1px; background: var(--border); margin: 32px 0; }
+
+  /* ── Nav ── */
+  .nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 48px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
+  }
+
+  .btn-back {
+    font-size: 13px; color: var(--muted);
+    background: none; border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    letter-spacing: 0.05em; padding: 12px 0;
+    transition: color 0.2s;
+  }
+  .btn-back:hover { color: var(--ink); }
+
+  .btn-next {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--ink);
+    color: white; border: none;
+    padding: 16px 32px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 500;
+    letter-spacing: 0.05em;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-next:hover { background: var(--gold); }
+  .btn-next:disabled { opacity: 0.5; cursor: not-allowed; background: var(--ink); }
+  .btn-next svg { transition: transform 0.2s; }
+  .btn-next:hover:not(:disabled) svg { transform: translateX(4px); }
+
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Error banner ── */
+  .error-banner {
+    display: none;
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+    color: var(--error);
+    padding: 12px 16px;
+    font-size: 13px;
+    margin-top: 16px;
+    text-align: center;
+  }
+
+  /* ── Thank you ── */
+  .thankyou { text-align: center; padding: 60px 0; }
+  .thankyou .icon { font-size: 56px; margin-bottom: 24px; }
+
+  .thankyou h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px; margin-bottom: 16px; color: var(--ink);
+  }
+
+  .thankyou p {
+    font-size: 16px; color: var(--muted);
+    line-height: 1.7; max-width: 440px;
+    margin: 0 auto 32px; font-weight: 300;
+  }
+
+  .highlight-box {
+    background: var(--cream);
+    border-left: 3px solid var(--gold);
+    padding: 20px 24px;
+    text-align: left;
+    margin: 0 auto 32px;
+    max-width: 460px;
+  }
+  .highlight-box p {
+    font-size: 14px; font-style: italic;
+    color: var(--ink); font-weight: 400; margin: 0;
+  }
+
+  /* ── Footer privacy ── */
+  .footer-privacy {
+    text-align: center;
+    margin-top: 64px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .footer-privacy a { color: var(--gold); text-decoration: none; }
+
+  @media (max-width: 600px) {
+    .wrapper { padding: 40px 16px 80px; }
+    .scale-wrap { gap: 4px; }
+    .scale-btn { padding: 12px 4px; font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<div class="wrapper">
+
+  <!-- ══ HEADER ══ -->
+  <header class="header">
+    <div class="badge">Pesquisa de produto · 5 min</div>
+    <h1>Como a IA pode<br><em>transformar</em> sua advocacia?</h1>
+    <p>Estamos desenvolvendo uma solução feita para advogados. Sua experiência real vai moldar o produto. Sem certo ou errado — só nos conte como é o seu dia a dia.</p>
+    <div class="time-tag">⏱ Leva em torno de 5 minutos</div>
+
+    <!-- Aviso de privacidade em destaque -->
+    <div class="privacy-notice">
+      <div class="privacy-icon">🔒</div>
+      <p>
+        <strong>Seus dados estão protegidos.</strong>
+        As informações coletadas aqui são usadas <em>exclusivamente</em> para pesquisa interna de desenvolvimento de produto. Nenhum dado pessoal será compartilhado, vendido ou divulgado a terceiros. Você pode solicitar a exclusão dos seus dados a qualquer momento respondendo esta mensagem.
+      </p>
+    </div>
+  </header>
+
+  <div class="steps-nav" id="stepsNav"></div>
+
+  <!-- ══════════════════════════════════════
+       S1 · Identificação (obrigatório)
+  ══════════════════════════════════════ -->
+  <div class="section active" id="s1">
+    <div class="section-label">Parte 1 de 5</div>
+    <div class="section-title">Antes de começar</div>
+    <div class="section-desc">Precisamos de algumas informações para entrar em contato caso você queira testar o produto em primeira mão.</div>
+
+    <div class="question">
+      <label>Nome completo <span class="required-star">*</span></label>
+      <input type="text" id="nome" placeholder="Ex: Ana Paula Ferreira">
+      <div class="field-error" id="err-nome">Por favor, informe seu nome completo.</div>
+    </div>
+
+    <div class="question">
+      <label>E-mail <span class="required-star">*</span></label>
+      <input type="email" id="email" placeholder="seu@email.com.br">
+      <div class="field-error" id="err-email">Por favor, informe um e-mail válido.</div>
+    </div>
+
+    <div class="question">
+      <label>Telefone / WhatsApp <span class="required-star">*</span></label>
+      <div class="hint">Com DDD. Usado apenas para contato sobre o produto — sem spam.</div>
+      <input type="tel" id="telefone" placeholder="(11) 99999-9999" oninput="maskPhone(this)">
+      <div class="field-error" id="err-telefone">Por favor, informe um telefone com DDD.</div>
+    </div>
+
+    <div class="nav">
+      <span></span>
+      <button class="btn-next" onclick="validateStep1()">
+        Continuar
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       S2 · Perfil
+  ══════════════════════════════════════ -->
+  <div class="section" id="s2">
+    <div class="section-label">Parte 2 de 5</div>
+    <div class="section-title">Seu perfil</div>
+    <div class="section-desc">Algumas informações básicas para contextualizarmos suas respostas.</div>
+
+    <div class="question">
+      <label>Qual área(s) do Direito você atua? <span class="required-star">*</span></label>
+      <div class="hint">Marque todas que se aplicam.</div>
+      <div class="options" id="areas">
+        <label class="option" onclick="toggleCheck(this)"><input type="checkbox" value="Trabalhista"><div class="option-mark square"></div><span class="option-text">Trabalhista</span></label>
+        <label class="option" onclick="toggleCheck(this)"><input type="checkbox" value="Previdenciário"><div class="option-mark square"></div><span class="option-text">Previdenciário</span></label>
+        <label class="option" onclick="toggleCheck(this)"><input type="checkbox" value="Cível"><div class="option-mark square"></div><span class="option-text">Cível</span></label>
+        <label class="option" onclick="toggleCheck(this)"><input type="checkbox" value="Criminal"><div class="option-mark square"></div><span class="option-text">Criminal</span></label>
+        <label class="option" onclick="toggleCheck(this)"><input type="checkbox" value="Empresarial / Contratos"><div class="option-mark square"></div><span class="option-text">Empresarial / Contratos</span></label>
+        <label class="option" onclick="toggleCheck(this)"><input type="checkbox" value="Tributário"><div class="option-mark square"></div><span class="option-text">Tributário</span></label>
+        <label class="option" onclick="toggleCheck(this)"><input type="checkbox" value="Família / Sucessões"><div class="option-mark square"></div><span class="option-text">Família / Sucessões</span></label>
+        <label class="option" onclick="toggleCheck(this)"><input type="checkbox" value="Outra área"><div class="option-mark square"></div><span class="option-text">Outra área</span></label>
+      </div>
+      <div class="field-error" id="err-areas">Selecione ao menos uma área.</div>
+    </div>
+
+    <div class="q-divider"></div>
+
+    <div class="question">
+      <label>Como você trabalha hoje? <span class="required-star">*</span></label>
+      <div class="options" id="formato">
+        <label class="option" onclick="selectRadio(this, 'formato')"><input type="radio" name="formato" value="Advogado solo"><div class="option-mark"></div><span class="option-text">Advogado solo / autônomo</span></label>
+        <label class="option" onclick="selectRadio(this, 'formato')"><input type="radio" name="formato" value="Escritório pequeno (2–5)"><div class="option-mark"></div><span class="option-text">Escritório pequeno (2–5 pessoas)</span></label>
+        <label class="option" onclick="selectRadio(this, 'formato')"><input type="radio" name="formato" value="Escritório médio (6–20)"><div class="option-mark"></div><span class="option-text">Escritório médio (6–20 pessoas)</span></label>
+        <label class="option" onclick="selectRadio(this, 'formato')"><input type="radio" name="formato" value="Escritório grande (20+)"><div class="option-mark"></div><span class="option-text">Escritório grande (20+)</span></label>
+        <label class="option" onclick="selectRadio(this, 'formato')"><input type="radio" name="formato" value="Departamento jurídico"><div class="option-mark"></div><span class="option-text">Departamento jurídico de empresa</span></label>
+      </div>
+      <div class="field-error" id="err-formato">Selecione uma opção.</div>
+    </div>
+
+    <div class="nav">
+      <button class="btn-back" onclick="goTo(1)">← Voltar</button>
+      <button class="btn-next" onclick="validateStep2()">
+        Continuar
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       S3 · Rotina
+  ══════════════════════════════════════ -->
+  <div class="section" id="s3">
+    <div class="section-label">Parte 3 de 5</div>
+    <div class="section-title">Rotina de trabalho</div>
+    <div class="section-desc">Queremos entender onde vai a maior parte do seu tempo.</div>
+
+    <div class="question">
+      <label>Quantas peças jurídicas você (ou seu time) produz por semana, em média? <span class="required-star">*</span></label>
+      <div class="hint">Petições, contratos, recursos, pareceres, despachos — qualquer documento jurídico.</div>
+      <div class="options" id="volume">
+        <label class="option" onclick="selectRadio(this, 'volume')"><input type="radio" name="volume" value="Menos de 5 peças"><div class="option-mark"></div><span class="option-text">Menos de 5 peças</span></label>
+        <label class="option" onclick="selectRadio(this, 'volume')"><input type="radio" name="volume" value="5 a 15 peças"><div class="option-mark"></div><span class="option-text">Entre 5 e 15 peças</span></label>
+        <label class="option" onclick="selectRadio(this, 'volume')"><input type="radio" name="volume" value="15 a 40 peças"><div class="option-mark"></div><span class="option-text">Entre 15 e 40 peças</span></label>
+        <label class="option" onclick="selectRadio(this, 'volume')"><input type="radio" name="volume" value="Mais de 40 peças"><div class="option-mark"></div><span class="option-text">Mais de 40 peças</span></label>
+      </div>
+      <div class="field-error" id="err-volume">Selecione uma opção.</div>
+    </div>
+
+    <div class="q-divider"></div>
+
+    <div class="question">
+      <label>Quanto tempo, em média, você gasta para redigir uma peça do zero? <span class="required-star">*</span></label>
+      <div class="options" id="tempo">
+        <label class="option" onclick="selectRadio(this, 'tempo')"><input type="radio" name="tempo" value="Menos de 30 min"><div class="option-mark"></div><span class="option-text">Menos de 30 minutos</span></label>
+        <label class="option" onclick="selectRadio(this, 'tempo')"><input type="radio" name="tempo" value="30 min a 1h"><div class="option-mark"></div><span class="option-text">30 minutos a 1 hora</span></label>
+        <label class="option" onclick="selectRadio(this, 'tempo')"><input type="radio" name="tempo" value="1h a 3h"><div class="option-mark"></div><span class="option-text">1 a 3 horas</span></label>
+        <label class="option" onclick="selectRadio(this, 'tempo')"><input type="radio" name="tempo" value="Mais de 3h"><div class="option-mark"></div><span class="option-text">Mais de 3 horas</span></label>
+      </div>
+      <div class="field-error" id="err-tempo">Selecione uma opção.</div>
+    </div>
+
+    <div class="q-divider"></div>
+
+    <div class="question">
+      <label>Qual é a parte mais frustrante na hora de produzir uma peça? <span class="required-star">*</span></label>
+      <div class="options" id="frustracao">
+        <label class="option" onclick="selectRadio(this, 'frustracao')"><input type="radio" name="frustracao" value="Pesquisar jurisprudência"><div class="option-mark"></div><span class="option-text">Pesquisar jurisprudência relevante</span></label>
+        <label class="option" onclick="selectRadio(this, 'frustracao')"><input type="radio" name="frustracao" value="Adaptar modelo antigo"><div class="option-mark"></div><span class="option-text">Adaptar um modelo antigo para o novo caso</span></label>
+        <label class="option" onclick="selectRadio(this, 'frustracao')"><input type="radio" name="frustracao" value="Construir linha argumentativa"><div class="option-mark"></div><span class="option-text">Construir a linha argumentativa</span></label>
+        <label class="option" onclick="selectRadio(this, 'frustracao')"><input type="radio" name="frustracao" value="Revisão e formatação"><div class="option-mark"></div><span class="option-text">Revisão e formatação final</span></label>
+        <label class="option" onclick="selectRadio(this, 'frustracao')"><input type="radio" name="frustracao" value="Volume alto de peças"><div class="option-mark"></div><span class="option-text">Volume — simplesmente são peças demais</span></label>
+      </div>
+      <div class="field-error" id="err-frustracao">Selecione uma opção.</div>
+    </div>
+
+    <div class="nav">
+      <button class="btn-back" onclick="goTo(2)">← Voltar</button>
+      <button class="btn-next" onclick="validateStep3()">
+        Continuar
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       S4 · IA
+  ══════════════════════════════════════ -->
+  <div class="section" id="s4">
+    <div class="section-label">Parte 4 de 5</div>
+    <div class="section-title">Você e a tecnologia</div>
+    <div class="section-desc">Queremos entender o que já foi tentado — e o que falta.</div>
+
+    <div class="question">
+      <label>Você já usa alguma ferramenta de IA no seu trabalho jurídico? <span class="required-star">*</span></label>
+      <div class="options" id="usoia">
+        <label class="option" onclick="selectRadio(this, 'usoia')"><input type="radio" name="usoia" value="Sim, uso com frequência"><div class="option-mark"></div><span class="option-text">Sim, uso com frequência (ChatGPT, Claude, Jurídico AI etc.)</span></label>
+        <label class="option" onclick="selectRadio(this, 'usoia')"><input type="radio" name="usoia" value="Já testei mas não virei rotina"><div class="option-mark"></div><span class="option-text">Já testei, mas não virei rotina</span></label>
+        <label class="option" onclick="selectRadio(this, 'usoia')"><input type="radio" name="usoia" value="Nunca testei"><div class="option-mark"></div><span class="option-text">Nunca testei</span></label>
+      </div>
+      <div class="field-error" id="err-usoia">Selecione uma opção.</div>
+    </div>
+
+    <div class="q-divider"></div>
+
+    <div class="question">
+      <label>Se já tentou usar IA para redigir peças, qual foi o maior problema? <span class="required-star">*</span></label>
+      <div class="options" id="problema">
+        <label class="option" onclick="selectRadio(this, 'problema')"><input type="radio" name="problema" value="Resultado genérico, sem meu estilo"><div class="option-mark"></div><span class="option-text">Resultado genérico demais, não tem meu estilo</span></label>
+        <label class="option" onclick="selectRadio(this, 'problema')"><input type="radio" name="problema" value="Erros jurídicos ou jurisprudência errada"><div class="option-mark"></div><span class="option-text">Erros jurídicos ou jurisprudência desatualizada</span></label>
+        <label class="option" onclick="selectRadio(this, 'problema')"><input type="radio" name="problema" value="Sigilo / dados do cliente"><div class="option-mark"></div><span class="option-text">Preocupação com sigilo / dados do cliente</span></label>
+        <label class="option" onclick="selectRadio(this, 'problema')"><input type="radio" name="problema" value="Curva de aprendizado alta"><div class="option-mark"></div><span class="option-text">Curva de aprendizado alta demais</span></label>
+        <label class="option" onclick="selectRadio(this, 'problema')"><input type="radio" name="problema" value="Nunca tentei usar IA"><div class="option-mark"></div><span class="option-text">Nunca tentei usar IA para peças</span></label>
+      </div>
+      <div class="field-error" id="err-problema">Selecione uma opção.</div>
+    </div>
+
+    <div class="q-divider"></div>
+
+    <div class="question">
+      <label>Imagine uma IA treinada especificamente nas peças <em>do seu escritório</em> — que aprende seu estilo, suas teses e sua linguagem. Quanto isso faria sentido para você? <span class="required-star">*</span></label>
+      <div style="margin-top: 16px;">
+        <div class="scale-wrap" id="faz_sentido">
+          <button class="scale-btn" onclick="selectScale(this, 'faz_sentido', 1)">1</button>
+          <button class="scale-btn" onclick="selectScale(this, 'faz_sentido', 2)">2</button>
+          <button class="scale-btn" onclick="selectScale(this, 'faz_sentido', 3)">3</button>
+          <button class="scale-btn" onclick="selectScale(this, 'faz_sentido', 4)">4</button>
+          <button class="scale-btn" onclick="selectScale(this, 'faz_sentido', 5)">5</button>
+        </div>
+        <div class="scale-desc"><span>Não faz sentido</span><span>Faria muita diferença</span></div>
+      </div>
+      <div class="field-error" id="err-faz_sentido">Selecione uma nota de 1 a 5.</div>
+    </div>
+
+    <div class="nav">
+      <button class="btn-back" onclick="goTo(3)">← Voltar</button>
+      <button class="btn-next" onclick="validateStep4()">
+        Continuar
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       S5 · Interesse
+  ══════════════════════════════════════ -->
+  <div class="section" id="s5">
+    <div class="section-label">Parte 5 de 5</div>
+    <div class="section-title">Últimas perguntas</div>
+    <div class="section-desc">Quase lá — só mais dois pontos importantes.</div>
+
+    <div class="question">
+      <label>Quanto você pagaria por mês por uma ferramenta assim — se ela realmente funcionasse? <span class="required-star">*</span></label>
+      <div class="options" id="preco">
+        <label class="option" onclick="selectRadio(this, 'preco')"><input type="radio" name="preco" value="Não pagaria"><div class="option-mark"></div><span class="option-text">Não pagaria, prefiro gratuito</span></label>
+        <label class="option" onclick="selectRadio(this, 'preco')"><input type="radio" name="preco" value="Até R$200/mês"><div class="option-mark"></div><span class="option-text">Até R$ 200 / mês</span></label>
+        <label class="option" onclick="selectRadio(this, 'preco')"><input type="radio" name="preco" value="R$200–600/mês"><div class="option-mark"></div><span class="option-text">R$ 200 a R$ 600 / mês</span></label>
+        <label class="option" onclick="selectRadio(this, 'preco')"><input type="radio" name="preco" value="R$600–1500/mês"><div class="option-mark"></div><span class="option-text">R$ 600 a R$ 1.500 / mês</span></label>
+        <label class="option" onclick="selectRadio(this, 'preco')"><input type="radio" name="preco" value="Mais de R$1500/mês"><div class="option-mark"></div><span class="option-text">Mais de R$ 1.500 / mês (para o escritório todo)</span></label>
+      </div>
+      <div class="field-error" id="err-preco">Selecione uma opção.</div>
+    </div>
+
+    <div class="q-divider"></div>
+
+    <div class="question">
+      <label>Há algo essencial que uma solução assim precisaria ter? <span class="required-star">*</span></label>
+      <div class="hint">Seja direto — uma frase já ajuda muito.</div>
+      <textarea id="sugestoes" placeholder="Ex: integrar com o PJe, guardar minha jurisprudência favorita, funcionar no celular..."></textarea>
+      <div class="field-error" id="err-sugestoes">Por favor, escreva ao menos uma linha.</div>
+    </div>
+
+    <div class="error-banner" id="errorBanner">Ops! Não conseguimos enviar. Tente novamente em alguns segundos.</div>
+
+    <div class="nav">
+      <button class="btn-back" onclick="goTo(4)">← Voltar</button>
+      <button class="btn-next" id="btnEnviar" onclick="validateStep5()" style="background: var(--gold);">
+        Enviar respostas
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       OBRIGADO
+  ══════════════════════════════════════ -->
+  <div class="section" id="s6">
+    <div class="thankyou">
+      <div class="icon">⚖️</div>
+      <h2>Obrigado pela sua contribuição.</h2>
+      <p>Suas respostas vão diretamente para a construção do produto. Cada detalhe importa.</p>
+      <div class="highlight-box">
+        <p>"Nossa missão é simples: devolver horas da sua semana sem abrir mão da qualidade jurídica. Você acabou de nos ajudar a chegar lá."</p>
+      </div>
+      <p style="font-size:14px;">Se quiser conversar diretamente, responda essa mensagem ou nos chame pelo WhatsApp. Adoraríamos ouvir mais sobre o seu dia a dia.</p>
+    </div>
+  </div>
+
+  <!-- ── Rodapé de privacidade ── -->
+  <div class="footer-privacy">
+    🔒 Seus dados são confidenciais e usados exclusivamente para pesquisa interna.<br>
+    Não compartilhamos, vendemos ou divulgamos nenhuma informação a terceiros.<br>
+    Em conformidade com a <strong>LGPD (Lei nº 13.709/2018)</strong>.
+  </div>
+
+</div><!-- /wrapper -->
+
+<script>
+  // ─────────────────────────────────────────────────────────
+  // ⚠️  COLE AQUI A URL DO SEU APPS SCRIPT APÓS IMPLANTAR
+  // ─────────────────────────────────────────────────────────
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbytZuKl7s4lGQxkyLp5CtCjswJUWAE7fNW__KfqdOqe5FdMXQ4V2buFWAmtAqIWfe06/exec";
+  // ─────────────────────────────────────────────────────────
+
+  const TOTAL = 5;
+  let current = 1;
+  let scaleValues = {};
+
+  // Dots de progresso
+  const navEl = document.getElementById('stepsNav');
+  for (let i = 1; i <= TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'step-dot' + (i === 1 ? ' active' : '');
+    d.id = 'dot' + i;
+    navEl.appendChild(d);
+  }
+
+  function updateProgress() {
+    const pct = ((current - 1) / TOTAL) * 100;
+    document.getElementById('progressBar').style.width = pct + '%';
+    for (let i = 1; i <= TOTAL; i++) {
+      const d = document.getElementById('dot' + i);
+      d.className = 'step-dot' + (i < current ? ' done' : i === current ? ' active' : '');
+    }
+  }
+
+  function goTo(n) {
+    document.getElementById('s' + current).classList.remove('active');
+    current = n;
+    document.getElementById('s' + current).classList.add('active');
+    updateProgress();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Helpers de validação ──
+  function showErr(id, show) {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('show', show);
+  }
+
+  function setInvalid(id, invalid) {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('invalid', invalid);
+  }
+
+  function radioVal(name) {
+    const el = document.querySelector(`input[name="${name}"]:checked`);
+    return el ? el.value : null;
+  }
+
+  // ── Validações por seção ──
+  function validateStep1() {
+    let ok = true;
+    const nome  = document.getElementById('nome');
+    const email = document.getElementById('email');
+    const tel   = document.getElementById('telefone');
+
+    const nomeOk = nome.value.trim().length > 1;
+    setInvalid('nome', !nomeOk); showErr('err-nome', !nomeOk);
+    if (!nomeOk) ok = false;
+
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim());
+    setInvalid('email', !emailOk); showErr('err-email', !emailOk);
+    if (!emailOk) ok = false;
+
+    const digits = tel.value.replace(/\D/g, '');
+    const telOk = digits.length >= 10;
+    setInvalid('telefone', !telOk); showErr('err-telefone', !telOk);
+    if (!telOk) ok = false;
+
+    if (ok) goTo(2);
+  }
+
+  function validateStep2() {
+    let ok = true;
+
+    const areas = document.querySelectorAll('#areas .option.selected').length > 0;
+    showErr('err-areas', !areas);
+    if (!areas) ok = false;
+
+    const fmt = radioVal('formato');
+    showErr('err-formato', !fmt);
+    if (!fmt) ok = false;
+
+    if (ok) goTo(3);
+  }
+
+  function validateStep3() {
+    let ok = true;
+    ['volume','tempo','frustracao'].forEach(name => {
+      const v = radioVal(name);
+      showErr('err-' + name, !v);
+      if (!v) ok = false;
+    });
+    if (ok) goTo(4);
+  }
+
+  function validateStep4() {
+    let ok = true;
+    ['usoia','problema'].forEach(name => {
+      const v = radioVal(name);
+      showErr('err-' + name, !v);
+      if (!v) ok = false;
+    });
+
+    const scaleOk = !!scaleValues['faz_sentido'];
+    showErr('err-faz_sentido', !scaleOk);
+    if (!scaleOk) ok = false;
+
+    if (ok) goTo(5);
+  }
+
+  function validateStep5() {
+    let ok = true;
+
+    const preco = radioVal('preco');
+    showErr('err-preco', !preco);
+    if (!preco) ok = false;
+
+    const sugestoes = document.getElementById('sugestoes').value.trim();
+    showErr('err-sugestoes', !sugestoes);
+    setInvalid('sugestoes', !sugestoes);
+    if (!sugestoes) ok = false;
+
+    if (ok) submitForm();
+  }
+
+  // ── UI helpers ──
+  function maskPhone(input) {
+    let v = input.value.replace(/\D/g, '').substring(0, 11);
+    if (v.length > 6) {
+      v = '(' + v.substring(0,2) + ') ' + v.substring(2, v.length > 10 ? 7 : 6) + '-' + v.substring(v.length > 10 ? 7 : 6);
+    } else if (v.length > 2) {
+      v = '(' + v.substring(0,2) + ') ' + v.substring(2);
+    } else if (v.length > 0) {
+      v = '(' + v;
+    }
+    input.value = v;
+  }
+
+  function selectRadio(el, group) {
+    document.querySelectorAll('#' + group + ' .option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    showErr('err-' + group, false);
+  }
+
+  function toggleCheck(el) {
+    el.classList.toggle('selected');
+    const anySelected = document.querySelectorAll('#areas .option.selected').length > 0;
+    showErr('err-areas', !anySelected);
+  }
+
+  function selectScale(btn, group, val) {
+    scaleValues[group] = val;
+    document.querySelectorAll('#' + group + ' .scale-btn').forEach((b, i) => {
+      b.classList.toggle('selected', i < val);
+    });
+    showErr('err-' + group, false);
+  }
+
+  // ── Coleta e envio ──
+  function collectData() {
+    const areas = [...document.querySelectorAll('#areas .option.selected input')]
+      .map(i => i.value).join(', ') || '—';
+
+    return {
+      timestamp:   new Date().toLocaleString('pt-BR'),
+      nome:        document.getElementById('nome').value.trim(),
+      email:       document.getElementById('email').value.trim(),
+      telefone:    document.getElementById('telefone').value.trim(),
+      areas,
+      formato:     radioVal('formato')     || '—',
+      volume:      radioVal('volume')      || '—',
+      tempo:       radioVal('tempo')       || '—',
+      frustracao:  radioVal('frustracao')  || '—',
+      usa_ia:      radioVal('usoia')       || '—',
+      problema_ia: radioVal('problema')    || '—',
+      faz_sentido: scaleValues['faz_sentido'] || '—',
+      preco:       radioVal('preco')       || '—',
+      sugestoes:   document.getElementById('sugestoes').value.trim() || '—',
+    };
+  }
+
+  async function submitForm() {
+    const btn    = document.getElementById('btnEnviar');
+    const banner = document.getElementById('errorBanner');
+
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div> Enviando...';
+    banner.style.display = 'none';
+
+    try {
+      await fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(collectData())
+      });
+
+      document.getElementById('s5').classList.remove('active');
+      document.getElementById('s6').classList.add('active');
+      document.getElementById('progressBar').style.width = '100%';
+      document.getElementById('stepsNav').style.display = 'none';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    } catch (err) {
+      btn.disabled = false;
+      btn.innerHTML = 'Enviar respostas <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+      banner.style.display = 'block';
+    }
+  }
+
+  updateProgress();
+</script>
+</body>
+</html>
