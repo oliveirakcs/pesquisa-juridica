@@ -505,9 +505,21 @@
         <label class="option"><input type="checkbox" value="Empresarial / Contratos"><div class="option-mark square"></div><span class="option-text">Empresarial / Contratos</span></label>
         <label class="option"><input type="checkbox" value="Tributário"><div class="option-mark square"></div><span class="option-text">Tributário</span></label>
         <label class="option"><input type="checkbox" value="Família / Sucessões"><div class="option-mark square"></div><span class="option-text">Família / Sucessões</span></label>
-        <label class="option"><input type="checkbox" value="Outra área"><div class="option-mark square"></div><span class="option-text">Outra área</span></label>
+        <label class="option" id="opt-outra"><input type="checkbox" value="Outra área"><div class="option-mark square"></div><span class="option-text">Outra área</span></label>
+      </div>
+      <div id="outra-area-wrap" style="display:none; margin-top:10px;">
+        <input type="text" id="outra-area-texto" placeholder="Qual área? Ex: Ambiental, Imobiliário, Administrativo...">
       </div>
       <div class="field-error" id="err-areas">Selecione ao menos uma área.</div>
+    </div>
+
+    <div class="q-divider"></div>
+
+    <div class="question">
+      <label>Em suas próprias palavras, como é a sua rotina de produção de peças? <span class="required-star">*</span></label>
+      <div class="hint">Sem filtro — pode ser um parágrafo curto. Isso nos ajuda mais do que qualquer múltipla escolha.</div>
+      <textarea id="rotina-livre" placeholder="Ex: Atendo muitos clientes trabalhistas, todo dia preciso montar petições parecidas do zero. O que mais me trava é buscar jurisprudência atualizada e adaptar para cada caso..."></textarea>
+      <div class="field-error" id="err-rotina-livre">Por favor, escreva ao menos uma linha.</div>
     </div>
 
     <div class="q-divider"></div>
@@ -715,7 +727,7 @@
   // ─────────────────────────────────────────────────────────
   // ⚠️  COLE AQUI A URL DO SEU APPS SCRIPT APÓS IMPLANTAR
   // ─────────────────────────────────────────────────────────
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz2eaNq4RMCGdm_kpKRoyyaD5upuNb2AuR7_Npx2oKWhjXzYIfUpcmKkzbSFM9FQY2Y/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw8TJe5-aj2NyhZrCAQRkzNkIHSjMA7N6B3fJDKtsNN31oVhA2W-C0YWYHIbtvVe9Q/exec";
   // ─────────────────────────────────────────────────────────
 
   const TOTAL = 5;
@@ -794,6 +806,11 @@
     showErr('err-areas', !areas);
     if (!areas) ok = false;
 
+    const rotina = document.getElementById('rotina-livre').value.trim();
+    showErr('err-rotina-livre', !rotina);
+    setInvalid('rotina-livre', !rotina);
+    if (!rotina) ok = false;
+
     const fmt = radioVal('formato');
     showErr('err-formato', !fmt);
     if (!fmt) ok = false;
@@ -865,6 +882,11 @@
     if (e.target.type === 'checkbox') {
       const label = e.target.closest('.option');
       label.classList.toggle('selected', e.target.checked);
+      // Mostra campo aberto se "Outra área" estiver marcado
+      if (e.target.value === 'Outra área') {
+        document.getElementById('outra-area-wrap').style.display = e.target.checked ? 'block' : 'none';
+        if (!e.target.checked) document.getElementById('outra-area-texto').value = '';
+      }
       const anySelected = document.querySelectorAll('#areas .option.selected').length > 0;
       showErr('err-areas', !anySelected);
     }
@@ -880,14 +902,26 @@
 
   // ── Coleta e envio ──
   function collectData() {
-    const areas = [...document.querySelectorAll('#areas .option.selected input')]
+    let areas = [...document.querySelectorAll('#areas .option.selected input')]
       .map(i => i.value).join(', ') || '—';
 
+    // Append "outra area" detail if filled
+    const outraTexto = document.getElementById('outra-area-texto').value.trim();
+    if (outraTexto) {
+      const outraIdx = areas.indexOf('Outra área');
+      if (outraIdx !== -1) {
+        const arr = areas.split(', ');
+        arr[arr.indexOf('Outra área')] = 'Outra área: ' + outraTexto;
+        areas = arr.join(', ');
+      }
+    }
+
     return {
-      timestamp:   new Date().toLocaleString('pt-BR'),
-      nome:        document.getElementById('nome').value.trim(),
-      email:       document.getElementById('email').value.trim(),
-      telefone:    document.getElementById('telefone').value.trim(),
+      timestamp:    new Date().toLocaleString('pt-BR'),
+      nome:         document.getElementById('nome').value.trim(),
+      email:        document.getElementById('email').value.trim(),
+      telefone:     document.getElementById('telefone').value.trim(),
+      rotina_livre: document.getElementById('rotina-livre').value.trim(),
       areas,
       formato:     radioVal('formato')     || '—',
       volume:      radioVal('volume')      || '—',
